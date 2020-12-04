@@ -39,9 +39,18 @@ mod_comb <- train(diagnosis~ ., data = preds, method = "rf", prox = TRUE)
 
 pred_comb <- predict(mod_comb, preds)
 
-sum(pred1 == testing$diagnosis)
-sum(pred2 == testing$diagnosis)
-sum(pred3 == testing$diagnosis)
+sum(pred1 == testing$diagnosis)/nrow(testing)
+sum(pred2 == testing$diagnosis)/nrow(testing)
+sum(pred3 == testing$diagnosis)/nrow(testing)
 sum(pred_comb == testing$diagnosis)
 
 sum(pred_comb == testing$diagnosis)/nrow(testing)
+
+# Compare Accuracy
+confusionMatrix(pred1, testing$diagnosis)$overall['Accuracy']
+confusionMatrix(pred2, testing$diagnosis)$overall['Accuracy']
+confusionMatrix(pred3, testing$diagnosis)$overall['Accuracy']
+
+confusionMatrix(pred_comb, testing$diagnosis)$overall['Accuracy']
+
+# legacy answer differs, boosting had the same accuracy as the model ensemble.
