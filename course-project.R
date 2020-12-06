@@ -79,3 +79,10 @@ final_pred <- final_pred[, col_ids]
 final_pred <- final_pred[, -(1:7)]
 
 predict(final_model, final_pred)
+
+# Let's build a conv-net and compare the result. In addition lets analyse the
+# results of the boosting model.
+
+print(mod2)
+
+# qplot(pred, classe, data = testing)
