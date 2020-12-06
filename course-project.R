@@ -37,16 +37,16 @@ col_classes <- paste0("iciicci", paste0(rep("d", 152), collapse = ""), "c")
 data <- read_csv("data/pml-training.csv", col_types = col_classes)
 
 # Some of the variables have not many data points.
-col_ids <- sapply(data, function(x) sum(is.na(x))) <= 19000
+col_ids <- sapply(data, function(x) sum(is.na(x))) / nrow(data) <= 0.95
 
 data <- data[, col_ids]
 data <- data[, -(1:7)]
 
 # Create train and test datasets
-inTrain = createDataPartition(data$classe, p = 3/4)[[1]]
+inTrain <- createDataPartition(data$classe, p = 3/4)[[1]]
 
-training = data[ inTrain,]
-testing = data[-inTrain,]
+training <- data[ inTrain,]
+testing <- data[-inTrain,]
 
 # summary(training)
 
@@ -63,14 +63,14 @@ ggplot(tidy_training, aes(x = classe, y = value, fill = classe)) +
 
 # Build model
 mod1 <- train(classe~ ., data = training, method = "lda")
-mod2 <- train(diagnosis~ ., data = training, method = "gbm")
+mod2 <- train(classe~ ., data = training, method = "gbm")
 mod3 <- train(classe~ ., data = training, method = "rf", prox = TRUE)
 
-pred <- predict(mod1, testing)
+pred <- predict(mod2, testing)
 
 confusionMatrix(pred, as.factor(testing$classe))$overall['Accuracy']
 
-final_model <- mod1
+final_model <- mod2
 
 # Final Prediction
 final_pred <- read_csv("data/pml-testing.csv", col_types = col_classes)
