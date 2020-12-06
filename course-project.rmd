@@ -1,0 +1,102 @@
+---
+title: "course-project"
+output: html_document
+---
+
+## R Markdown
+
+The aim of this analysis is to predict the motion of a Unilateral Dumbbell Biceps Curl.
+Based on the study design the motion can be categorised into 5 different classes:
+
+- A: exactly according to the specification
+- B: throwing the elbows to the front
+- C: lifting the dumbbell only halfway
+- D: lowering the dumbbell only halfway
+- E: throwing the hips to the front
+
+We will build a boosting model to predict the motion based on input data from 
+various moition detection systems on different body parts (e.g. belt, arm, forearm).
+
+Let's start by cleaning up the input data. Various variables do not have any significant
+information due to the fact that more than 95% of the datapoints are missing. We 
+will drop those and split the data according to the cross-validation technique
+into training and test data. 75% of the input data will be used as training and the
+remaining 25% will be used as test data. The final predicion will be performed on 
+20 precompiled test data points.
+
+```{r}
+library(readr)
+library(caret)
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(tidyr)
+
+set.seed(1234)
+
+col_classes <- paste0("iciicci", paste0(rep("d", 152), collapse = ""), "c")
+
+data <- read_csv("data/pml-training.csv", col_types = col_classes)
+
+# Some of the variables have not many data points.
+col_ids <- sapply(data, function(x) sum(is.na(x))) / nrow(data) <= 0.95
+
+data <- data[, col_ids]
+data <- data[, -(1:7)]
+
+# Create train and test datasets
+inTrain <- createDataPartition(data$classe, p = 3/4)[[1]]
+
+training <- data[ inTrain,]
+testing <- data[-inTrain,]
+```
+
+Correlation analysis and a violin-plot are both used as preliminary data-exploration
+tools. The correlation plot shows a strong connection between the majority of the 
+belt variables and some of the arm and forearm. The violin-plot highlights a uniform
+data distribution among the 5 different motion classes for most of the variables.
+Thus indicating that the problem may not be solved easily with a linear model.
+We will therefore use a generalized boosted regression model to predict the motions.
+
+
+```{r}
+# Let's do some preliminary data analysis
+cm <- cor(training[, -ncol(training)])
+
+tidy_training <- pivot_longer(training, cols = !any_of("classe"))
+```
+
+```{r corrplot, fig.height=10, fig.width=10}
+corrplot(cm, method = "circle")
+```
+
+```{r violinplot, fig.width = 12, fig.height=12}
+ggplot(tidy_training, aes(x = classe, y = value, fill = classe)) +
+  geom_violin() +
+  facet_wrap(~name, scale = "free")
+```
+
+```{r}
+# Build model
+# mod <- train(classe~ ., data = training, method = "gbm")
+load("mod.RData")
+
+pred <- predict(mod, testing)
+
+confusionMatrix(pred, as.factor(testing$classe))$overall['Accuracy']
+```
+
+The model shows a 96% accuracy when applied to the test-dataset.
+
+Following are the predictions based on the 20 test data-points.
+
+```{r}
+# Final Prediction
+final_pred <- read_csv("data/pml-testing.csv", col_types = col_classes)
+
+final_pred <- final_pred[, col_ids]
+final_pred <- final_pred[, -(1:7)]
+
+predict(mod, final_pred)
+```
+
